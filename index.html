@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SocialGraph Studio | BFS &amp; DFS Social Network Analysis</title>
+  <meta name="description" content="Interactive BFS and DFS traversal visualization on social network graphs. Animate algorithms, inspect communities, and analyze time complexity live.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- SVG sprite -->
+  <svg class="icon-sprite" aria-hidden="true">
+    <symbol id="i-network" viewBox="0 0 24 24"><path d="M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M12 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="m8.6 8 2.3 7"/><path d="m15.4 8-2.3 7"/><path d="M9 6h6"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M6 4.8v14.4c0 1 .9 1.6 1.7 1.1l11.4-7.2a1.3 1.3 0 0 0 0-2.2L7.7 3.7A1.1 1.1 0 0 0 6 4.8Z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14"/><path d="M16 5v14"/></symbol>
+    <symbol id="i-step" viewBox="0 0 24 24"><path d="M5 4.8v14.4c0 .8.9 1.3 1.6.8l8.8-6.4c.7-.5.7-1.5 0-2L6.6 4c-.7-.5-1.6 0-1.6.8Z"/><path d="M19 5v14"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V3"/><path d="m7 8 5-5 5 5"/><path d="M5 21h14"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.1 0l2-2a5 5 0 0 0-7.1-7.1l-1.2 1.2"/><path d="M14 11a5 5 0 0 0-7.1 0l-2 2a5 5 0 0 0 7.1 7.1l1.2-1.2"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M6 7l1 15h10l1-15"/><path d="M9 7V4h6v3"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/><path d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"/><path d="M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h17"/><path d="M8 16v-5"/><path d="M13 16V8"/><path d="M18 16v-9"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5Z"/></symbol>
+    <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></symbol>
+    <symbol id="i-activity" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></symbol>
+  </svg>
+
+  <!-- Animated background -->
+  <div class="bg-canvas" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- Node tooltip (shared, positioned by JS) -->
+  <div class="node-tooltip" id="nodeTooltip"></div>
+
+  <div class="app-shell">
+
+    <!-- ── NAVBAR ──────────────────────────────────────────────────────── -->
+    <header class="navbar" role="banner">
+      <a class="brand" href="#studio" aria-label="SocialGraph Studio home">
+        <div class="brand-icon" aria-hidden="true">
+          <svg width="22" height="22"><use href="#i-network"></use></svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-badge">DAA Project 12</span>
+          <span class="brand-name">SocialGraph Studio</span>
+        </div>
+      </a>
+
+      <nav aria-label="Main navigation">
+        <a id="nav-studio"    class="active" href="#studio">
+          <svg><use href="#i-network"></use></svg> Studio
+        </a>
+        <a id="nav-data"      href="#data">
+          <svg><use href="#i-upload"></use></svg> Data Input
+        </a>
+        <a id="nav-analytics" href="#analytics">
+          <svg><use href="#i-chart"></use></svg> Analytics
+        </a>
+        <a id="nav-theory"    href="#theory">
+          <svg><use href="#i-book"></use></svg> Explanation
+        </a>
+      </nav>
+
+      <div class="nav-actions">
+        <button id="sampleBtn" class="btn-ghost">
+          <svg><use href="#i-network"></use></svg> Load sample
+        </button>
+        <button id="clearBtn" class="btn-ghost danger">
+          <svg><use href="#i-trash"></use></svg> Clear
+        </button>
+      </div>
+    </header>
+
+    <main>
+
+      <!-- ── HERO ───────────────────────────────────────────────────────── -->
+      <section class="hero-strip" aria-label="Project header">
+        <div>
+          <p class="hero-eyebrow">Graph Traversal Algorithms · Social Network Analysis</p>
+          <h1>BFS &amp; DFS Connectivity<br>Visualization</h1>
+        </div>
+        <p class="hero-desc">
+          Paste your own social network, animate BFS or DFS step by step, watch the real queue or stack update live, inspect connected communities, and analyze time complexity with live metrics.
+        </p>
+      </section>
+
+      <!-- ── KPI ROW ─────────────────────────────────────────────────────── -->
+      <section class="kpi-row" aria-label="Graph summary metrics">
+        <article class="kpi-card k-blue" aria-label="Users count">
+          <div class="kpi-label">Users</div>
+          <strong class="kpi-value" id="heroNodes">0</strong>
+          <div class="kpi-sub">Total vertices</div>
+        </article>
+        <article class="kpi-card k-teal" aria-label="Connections count">
+          <div class="kpi-label">Connections</div>
+          <strong class="kpi-value" id="heroEdges">0</strong>
+          <div class="kpi-sub">Total edges</div>
+        </article>
+        <article class="kpi-card k-violet" aria-label="Graph density">
+          <div class="kpi-label">Density</div>
+          <strong class="kpi-value" id="heroDensity">0.00</strong>
+          <div class="kpi-sub">Edge fullness ratio</div>
+        </article>
+        <article class="kpi-card k-amber" aria-label="Communities count">
+          <div class="kpi-label">Communities</div>
+          <strong class="kpi-value" id="heroComponents">0</strong>
+          <div class="kpi-sub">Connected components</div>
+        </article>
+      </section>
+
+      <!-- ── STUDIO ─────────────────────────────────────────────────────── -->
+      <section class="studio-grid" id="studio" aria-label="Graph studio">
+
+        <!-- Main graph card -->
+        <div class="graph-card">
+          <div class="card-head">
+            <div>
+              <p class="section-eyebrow">Live Network Map</p>
+              <h2>Social network graph workspace</h2>
+            </div>
+            <div class="legend" aria-label="Node color legend">
+              <div class="legend-item"><div class="legend-dot source"></div> Source</div>
+              <div class="legend-item"><div class="legend-dot target"></div> Target</div>
+              <div class="legend-item"><div class="legend-dot current"></div> Current</div>
+              <div class="legend-item"><div class="legend-dot visited"></div> Visited</div>
+            </div>
+          </div>
+
+          <!-- Control dock -->
+          <div class="graph-control-dock" role="toolbar" aria-label="Algorithm controls">
+            <div class="field-block">
+              <span class="field-label">Algorithm</span>
+              <div class="segmented" role="group" aria-label="Algorithm selector">
+                <button class="segment active" data-algorithm="BFS" id="segBFS" aria-pressed="true">BFS</button>
+                <button class="segment"        data-algorithm="DFS" id="segDFS" aria-pressed="false">DFS</button>
+              </div>
+            </div>
+
+            <div class="field-block">
+              <label class="field-label" for="sourceSelect">Source user</label>
+              <select id="sourceSelect" aria-label="Select source user"></select>
+            </div>
+
+            <div class="field-block">
+              <label class="field-label" for="targetSelect">Target user</label>
+              <select id="targetSelect" aria-label="Select target user"></select>
+            </div>
+
+            <div class="field-block">
+              <label class="field-label" for="speedRange">
+                Speed&nbsp;
+                <span id="speedLabel" style="font-weight:500;color:var(--ink-muted);">Med</span>
+              </label>
+              <input id="speedRange" type="range" min="120" max="1800" value="700" step="40" aria-label="Animation speed">
+            </div>
+
+            <div class="dock-actions">
+              <button class="btn-teal" id="runBtn" aria-label="Start traversal">
+                <svg><use href="#i-play"></use></svg> Start
+              </button>
+              <button class="btn-control" id="stepBtn" aria-label="Step forward">
+                <svg><use href="#i-step"></use></svg> Step
+              </button>
+              <button class="btn-control" id="pauseBtn" aria-label="Pause traversal">
+                <svg><use href="#i-pause"></use></svg> Pause
+              </button>
+              <button class="btn-control" id="resetBtn" aria-label="Reset traversal">
+                <svg><use href="#i-reset"></use></svg> Reset
+              </button>
+            </div>
+          </div>
+
+          <!-- Traversal progress bar -->
+          <div class="traversal-progress" id="traversalProgress" style="opacity:0;">
+            <div class="traversal-progress-fill" id="traversalProgressFill" style="width:0%"></div>
+          </div>
+
+          <!-- SVG graph canvas -->
+          <div class="graph-stage">
+            <svg id="graphSvg" viewBox="0 0 1040 650" role="img" aria-label="Interactive social network graph visualization"></svg>
+            <div class="graph-toast" id="graphToast" role="status" aria-live="polite">
+              <div class="toast-dot"></div>
+              <span id="toastText">Enter graph data or load the sample network.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Insight row ─────────────────────────────────────────────── -->
+        <div class="insight-row">
+
+          <!-- Path finder -->
+          <div class="panel" aria-label="Connection finder">
+            <div class="panel-head">
+              <svg><use href="#i-target"></use></svg>
+              Connection Finder
+            </div>
+            <div class="panel-body">
+              <p class="path-result" id="pathResult">Choose source and target to calculate social distance.</p>
+            </div>
+          </div>
+
+          <!-- Queue / Stack visualization -->
+          <div class="panel structure-panel" aria-label="Data structure visualization" id="structurePanel">
+            <div class="structure-header">
+              <div class="structure-title" id="structureTitleEl">
+                <svg><use href="#i-layers"></use></svg>
+                <span id="structureTitle">Queue Visualization</span>
+              </div>
+              <span class="structure-badge badge-fifo" id="structureBadge">FIFO</span>
+            </div>
+
+            <!-- Direction labels for BFS queue -->
+            <div class="structure-dir" id="structureDir">
+              <span class="dir-label">
+                <span class="dir-arrow" id="dirDequeue">⟵</span>
+                <span id="dirDequeueLabel">DEQUEUE</span>
+              </span>
+              <span class="dir-label">
+                <span id="dirEnqueueLabel">ENQUEUE</span>
+                <span class="dir-arrow" id="dirEnqueue">⟶</span>
+              </span>
+            </div>
+
+            <!-- Queue: horizontal scroll track -->
+            <div class="queue-viewport" id="queueViewport" aria-label="Queue contents">
+              <div class="queue-track" id="queueTrack">
+                <div class="empty-structure">Run BFS to see enqueue / dequeue operations.</div>
+              </div>
+            </div>
+
+            <!-- Stack: vertical track (hidden when BFS) -->
+            <div class="stack-viewport" id="stackViewport" aria-label="Stack contents" style="display:none;">
+              <div class="stack-track" id="stackTrack">
+                <div class="empty-structure">Run DFS to see push / pop operations.</div>
+              </div>
+            </div>
+
+            <div class="structure-meta" id="structureMeta">BFS uses FIFO: enqueue at rear, dequeue from front.</div>
+          </div>
+
+          <!-- Step narration -->
+          <div class="panel step-panel" aria-label="Step narration" id="stepNarration">
+            <div class="panel-head">
+              <svg><use href="#i-activity"></use></svg>
+              Current Step
+            </div>
+            <div class="panel-body">
+              <p class="step-content" id="stepText">Run BFS or DFS to see the data structure state and traversal explanation here.</p>
+            </div>
+          </div>
+
+        </div><!-- /insight-row -->
+      </section><!-- /studio -->
+
+      <!-- ── DATA INPUT ──────────────────────────────────────────────────── -->
+      <section class="data-grid" id="data" aria-label="Data input">
+
+        <article class="input-card">
+          <div class="card-head">
+            <div>
+              <p class="section-eyebrow">User Entered Values</p>
+              <h2>Paste your social network</h2>
+            </div>
+            <button id="loadCustomBtn" class="btn-primary">
+              <svg><use href="#i-upload"></use></svg> Load graph
+            </button>
+          </div>
+          <p class="helper-text">
+            Use one connection per line like <strong>Ayesha-Bilal</strong>, or adjacency format like
+            <strong>Ayesha: Bilal, Hina</strong>. Names with spaces should be comma-separated.
+          </p>
+          <textarea id="edgeInput" spellcheck="false" aria-label="Graph edge input">Ayesha: Bilal, Hina, Fahad
+Bilal: Usman, Sara
+Hina: Sara, Nida
+Sara: Zain, Noor
+Zain: Iqra, Danish
+Iqra: Ali, Maham
+Omar: Maham, Nida, Hamza
+Noor: Hamza, Fahad
+Laiba: Fahad, Rehan
+Sana: Rehan, Ayesha</textarea>
+        </article>
+
+        <article class="builder-card">
+          <div class="card-head">
+            <div>
+              <p class="section-eyebrow">Manual Builder</p>
+              <h2>Add users &amp; edges</h2>
+            </div>
+          </div>
+          <div class="builder-body">
+            <div class="field-block">
+              <label class="field-label" for="newUserInput">New user</label>
+              <div class="inline-form">
+                <input id="newUserInput" type="text" maxlength="18" placeholder="Enter user name" autocomplete="off">
+                <button id="addUserBtn" class="btn-primary">
+                  <svg><use href="#i-plus"></use></svg> Add
+                </button>
+              </div>
+            </div>
+
+            <div class="two-col">
+              <div class="field-block">
+                <label class="field-label" for="edgeFrom">From</label>
+                <select id="edgeFrom" aria-label="Edge from user"></select>
+              </div>
+              <div class="field-block">
+                <label class="field-label" for="edgeTo">To</label>
+                <select id="edgeTo" aria-label="Edge to user"></select>
+              </div>
+            </div>
+
+            <div class="action-row">
+              <button id="addEdgeBtn" class="btn-primary">
+                <svg><use href="#i-link"></use></svg> Add edge
+              </button>
+              <button id="removeEdgeBtn" class="btn-ghost danger">
+                <svg><use href="#i-trash"></use></svg> Remove edge
+              </button>
+            </div>
+
+            <div class="tip-box">
+              <strong>Teacher-friendly note:</strong> The graph is not generated randomly. The system
+              analyzes exactly what you type or build manually — every vertex and edge reflects real user input.
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <!-- ── ANALYTICS ───────────────────────────────────────────────────── -->
+      <section class="analytics-grid" id="analytics" aria-label="Analytics">
+
+        <article class="analysis-card">
+          <div class="card-head">
+            <div>
+              <p class="section-eyebrow">Influence Propagation</p>
+              <h2>BFS level chart</h2>
+            </div>
+          </div>
+          <div class="chart-area" id="levelChart">
+            <p style="font-size:13px;color:var(--ink-subtle);">Run BFS to visualize influence levels from the selected source.</p>
+          </div>
+        </article>
+
+        <article class="analysis-card">
+          <div class="card-head">
+            <div>
+              <p class="section-eyebrow">Community Detection</p>
+              <h2>Connected components</h2>
+            </div>
+          </div>
+          <div class="chart-area" id="componentChart">
+            <p style="font-size:13px;color:var(--ink-subtle);">Enter graph data to detect communities.</p>
+          </div>
+        </article>
+
+        <article class="analysis-card wide">
+          <div class="card-head">
+            <div>
+              <p class="section-eyebrow">Traversal Report</p>
+              <h2>Algorithm output</h2>
+            </div>
+          </div>
+          <div class="report-grid">
+            <div class="report-cell">
+              <span class="report-cell-label">Connectivity</span>
+              <div class="report-cell-value" id="connectedStatus">No graph</div>
+              <p class="report-cell-text" id="componentSummary">Enter data to analyze communities.</p>
+            </div>
+            <div class="report-cell">
+              <span class="report-cell-label">Traversal order</span>
+              <div class="report-cell-value" id="orderCount">0 visited</div>
+              <p class="report-cell-text" id="orderList">Run an algorithm to see the visit sequence.</p>
+            </div>
+            <div class="report-cell">
+              <span class="report-cell-label">Complexity</span>
+              <div class="report-cell-value">O(V + E)</div>
+              <p class="report-cell-text" id="operationCount">Operations appear during traversal.</p>
+            </div>
+          </div>
+        </article>
+
+      </section>
+
+      <!-- ── THEORY ──────────────────────────────────────────────────────── -->
+      <section class="theory-grid" id="theory" aria-label="Algorithm explanation">
+
+        <article class="theory-card">
+          <div class="card-head">
+            <div>
+              <span class="algo-badge badge-bfs">
+                <svg width="10" height="10"><use href="#i-layers"></use></svg> BFS
+              </span>
+              <h2>Breadth-First Search</h2>
+            </div>
+          </div>
+          <div class="theory-body">
+            <div class="complexity-chip">
+              <svg width="13" height="13"><use href="#i-zap"></use></svg>
+              Time Complexity: O(V + E)
+            </div>
+            <p class="theory-desc">
+              BFS uses a <strong style="color:var(--blue)">queue (FIFO)</strong> and explores the social network
+              level by level. It is best for finding shortest social distance, influence spread, and
+              friends-of-friends discovery.
+            </p>
+            <pre><code><span class="kw">BFS</span><span class="fn">(graph, source):</span>
+  <span class="cmt"># Mark source and add to queue</span>
+  mark source <span class="kv">visited</span>
+  <span class="fn">enqueue</span>(source)
+
+  <span class="kw">while</span> queue <span class="kw">is not</span> empty:
+    current = <span class="fn">dequeue</span>()          <span class="cmt"># FIFO front</span>
+
+    <span class="kw">for each</span> neighbor <span class="kw">of</span> current:
+      <span class="kw">if</span> neighbor <span class="kw">not</span> visited:
+        mark neighbor <span class="kv">visited</span>
+        <span class="fn">enqueue</span>(neighbor)    <span class="cmt"># add to rear</span></code></pre>
+          </div>
+        </article>
+
+        <article class="theory-card">
+          <div class="card-head">
+            <div>
+              <span class="algo-badge badge-dfs">
+                <svg width="10" height="10"><use href="#i-activity"></use></svg> DFS
+              </span>
+              <h2>Depth-First Search</h2>
+            </div>
+          </div>
+          <div class="theory-body">
+            <div class="complexity-chip">
+              <svg width="13" height="13"><use href="#i-zap"></use></svg>
+              Time Complexity: O(V + E)
+            </div>
+            <p class="theory-desc">
+              DFS uses a <strong style="color:var(--violet)">stack (LIFO)</strong> and explores deeply before
+              backtracking. It is best for connected components, deep relationship chains, cycle detection,
+              and community exploration.
+            </p>
+            <pre><code><span class="kw">DFS</span><span class="fn">(graph, source):</span>
+  <span class="cmt"># Push source onto stack</span>
+  <span class="fn">push</span>(source)
+
+  <span class="kw">while</span> stack <span class="kw">is not</span> empty:
+    current = <span class="fn">pop</span>()             <span class="cmt"># LIFO top</span>
+
+    <span class="kw">if</span> current <span class="kw">not</span> visited:
+      mark current <span class="kv">visited</span>
+
+      <span class="kw">for each</span> neighbor <span class="kw">of</span> current:
+        <span class="kw">if</span> neighbor <span class="kw">not</span> visited:
+          <span class="fn">push</span>(neighbor)       <span class="cmt"># add to top</span></code></pre>
+          </div>
+        </article>
+
+      </section>
+
+    </main>
+
+    <!-- ── FOOTER ──────────────────────────────────────────────────────── -->
+    <footer role="contentinfo">
+      <div class="footer-left">
+        <span>SocialGraph Studio</span>
+        <div class="footer-dot"></div>
+        <span>Design &amp; Analysis of Algorithms</span>
+        <div class="footer-dot"></div>
+        <span>Project 12</span>
+        <span class="footer-badge">O(V + E)</span>
+      </div>
+      <span>Graph Traversal · BFS · DFS · Social Networks</span>
+    </footer>
+
+  </div><!-- /app-shell -->
+
+  <script src="app.js"></script>
+</body>
+</html>
